@@ -1,5 +1,5 @@
 const fs = require('fs');
-const path = require('path');
+const Gaze = require('gaze').Gaze;
 const logger = require('./logger');
 
 class FolderWatcher {
@@ -10,14 +10,16 @@ class FolderWatcher {
         this._debounceTime = options.debounceTime || 300;
         this._listeners = [];
         this._watcher = null;
-        this._lastRenamed = null;
-        this._renameTimeout = 0;
 
         if (options.autoStart) {
             this.start();
         }
 
         return this;
+    }
+
+    get folderPath() {
+        return this._folderPath;
     }
 
     get state() {
@@ -34,7 +36,8 @@ class FolderWatcher {
     start() {
         if (this.state === 'idle' && this.checkSettings()) {
             try {
-                this._watcher = fs.watch(this._folderPath, this.onWatcherChangeEvent.bind(this));
+                this._watcher = new Gaze('**', { cwd: this._folderPath });
+                this._watcher.on('all', this.onWatcherChangeEvent.bind(this));
                 this._watcher.on('error', FolderWatcher.onWatcherError.bind(this));
                 this._state = 'watching';
             } catch (error) {
@@ -77,32 +80,20 @@ class FolderWatcher {
 
     onWatcherChangeEvent(eventType, filename) {
         switch (eventType) {
-            case 'rename':
-                if (fs.existsSync(path.resolve(dropInsFolder, filename))) {
-                    if (this._lastRenamed) {
-                        clearTimeout(this._renameTimeout);
-                        this.fireEvent('rename', this._lastRenamed, filename);
-                        this._lastRenamed = null;
-                    } else {
-                        this.fireEvent('create', filename);
-                    }
-                    
-                } else {
-                    this._lastRenamed = filename;
-                    this._renameTimeout = setTimeout(() => {
-                        this.fireEvent('delete', filename);
-                    }, 1);
-                }
+            case 'added':
+                this.fireEvent('created', filename);
                 break;
-
-            case 'change':
-                this.fireEvent('change', filename);
+            case 'changed':
+                this.fireEvent('changed', filename);
+                break;
+            case 'deleted':
+                this.fireEvent('deleted', filename);
                 break;
         }
     }
 
-    static onWatcherError() {
-        logger.logError(`  > FileWatcher ERROR: `, arguments);
+    static onWatcherError(error) {
+        logger.logError(`  > FileWatcher ERROR: `, error);
     }
 }
 

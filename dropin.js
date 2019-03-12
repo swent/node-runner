@@ -19,6 +19,7 @@ class DropIn {
             autoStart: true,
         });
         this._process = null;
+        this._processRunning = false;
         this._debounceTimer = 0;
         this._restartTimer = 0;
         this._forceStop = false;
@@ -123,6 +124,7 @@ class DropIn {
                 cwd: this._folderPath,
                 encoding: 'utf8'
             });
+            this._processRunning = true;
             this._process.on('close', this.onProcessClose.bind(this));
             this._process.stdout.on('data', this.onProcessData.bind(this));
             this._process.stderr.on('data', this.onProcessError.bind(this));
@@ -135,6 +137,7 @@ class DropIn {
     }
 
     onProcessClose(exitCode) {
+        this._processRunning = false;
         this._process = null;
         logger.logWarning(`  > Node process of drop-in "${this.name}" exited with code ${exitCode} !`);
         if (!this._forceStop) {
@@ -163,7 +166,7 @@ class DropIn {
                 clearTimeout(this._restartTimer);
                 this._restartTimer = 0;
             } else {
-                if (this._process && this._process) {
+                if (this._process && this._processRunning) {
                     this._process.exit(0);
                 }
             }

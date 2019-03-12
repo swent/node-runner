@@ -23,11 +23,17 @@ function unregisterDropIn(dropInName) {
 }
 
 function loadDropInFolders() {
-    if (fs.existsSync(dropInsFolder)) {
-        return fs.readdirSync(dropInsFolder);
-    } else {
-        throw new Error('Drop-ins folder does not exist.');
+    if (!fs.existsSync(dropInsFolder)) {
+        try {
+            fs.mkdirSync(dropInsFolder)
+        } catch (error) {
+            if (error.code !== 'EEXIST') {
+                throw error;
+            }
+        }
     }
+
+    return fs.readdirSync(dropInsFolder);
 }
 
 function registerDropInFolders(folders) {
@@ -43,14 +49,14 @@ function onMainWatcherEvent(eventType) {
     let data = Array.prototype.splice.call(arguments, 1);
     
     switch (eventType) {
-        case 'create':
+        case 'created':
             registerDropIn(data[0]);
             break;
-        case 'rename':
+        case 'changed':
             unregisterDropIn(data[0]);
             registerDropIn(data[1]);
             break;
-        case 'delete':
+        case 'deleted':
             unregisterDropIn(data[0]);
             break;
     }
