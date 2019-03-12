@@ -1,0 +1,18 @@
+{
+  "name": "node-runner",
+  "version": "0.1.0",
+  "description": "Docker container that let's you drop-in node applications to auto-run them on the fly. Turbo charge hosting your little scripts and crawlers.",
+  "main": "main.js",
+  "dropInsFolder": "dropins",
+  "logFile": "runtime.log",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "node",
+    "nodejs",
+    "docker"
+  ],
+  "author": "swent",
+  "license": "MIT"
+}
