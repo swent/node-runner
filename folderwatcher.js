@@ -36,7 +36,7 @@ class FolderWatcher {
     start() {
         if (this.state === 'idle' && this.checkSettings()) {
             try {
-                this._watcher = new Gaze('**', { cwd: this._folderPath });
+                this._watcher = new Gaze('**', { cwd: this._folderPath, mode: 'poll' });
                 this._watcher.on('all', this.onWatcherChangeEvent.bind(this));
                 this._watcher.on('error', FolderWatcher.onWatcherError.bind(this));
                 this._state = 'watching';
