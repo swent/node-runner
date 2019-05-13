@@ -1,31 +1,46 @@
 const pkg = require('./package.json');
-const fs = require('fs');
-const process = require('process');
-const folderWatcher = require('./folderwatcher');
-const { dropIn, dropInsFolder } = require('./dropin');
-const logger = require('./logger');
+const { existsSync, readdirSync, mkdirSync, lstatSync, statSync } = require('fs');
+const { resolve, sep } = require('path');
+const { PollFolderwatch } = require('./PollFolderwatch');
+const { DropIn } = require('./DropIn');
+const logger = require('./Logger');
+
 const version = pkg.version;
 const nodeVersion = process.version;
 
-let _dropIns = [];
+const dropInsFolder = resolve(process.cwd(), pkg.dropInsFolder);
+const watcher = new PollFolderwatch(dropInsFolder, { autoStart: true });
+const dropIns = [];
 
-function registerDropIn(dropInName) {
-    logger.logInformation(`  > Registering new drop-in "${dropInName}" ...`);
-    _dropIns.push(new dropIn(dropInName));
-    logger.logInformation(`    List: ${_dropIns.map(di => di.name).join(', ')}`);
+function registerDropIn(fullPath) {
+    let pathParts = fullPath.split(sep),
+        dropInName = pathParts[pathParts.length - 1];
+
+    logger.information(`  > Registering new drop-in "${dropInName}" ...`);
+    dropIns.push(new DropIn(dropInName, fullPath));
+    logger.information(`    List: ${dropIns.map(di => di.name).join(', ')}`);
 }
 
 function unregisterDropIn(dropInName) {
-    logger.logInformation(`  > Unregistering drop-in "${dropInName}" ...`);
-    let dropIn = _dropIns.splice(_dropIns.findIndex(di => di.name === dropInName), 1)[0];
+    logger.information(`  > Unregistering drop-in "${dropInName}" ...`);
+    let dropIn = dropIns.splice(dropIns.findIndex(di => di.name === dropInName), 1)[0];
     dropIn.destroy();
-    logger.logInformation(`    List: ${_dropIns.map(di => di.name).join(', ')}`);
+    logger.information(`    List: ${dropIns.map(di => di.name).join(', ')}`);
 }
 
-function loadDropInFolders() {
-    if (!fs.existsSync(dropInsFolder)) {
+function restartDropIn(dropInName) {
+    let dropIn = dropIns.splice(dropIns.findIndex(di => di.name === dropInName), 1)[0];
+
+    if (dropIn) {
+        logger.information(`  > Restarting drop-in "${dropInName}" ...`);
+        dropIn.restart();
+    }
+}
+
+function loadDropIns(dropInsFolder) {
+    if (!existsSync(dropInsFolder)) {
         try {
-            fs.mkdirSync(dropInsFolder)
+            mkdirSync(dropInsFolder)
         } catch (error) {
             if (error.code !== 'EEXIST') {
                 throw error;
@@ -33,46 +48,44 @@ function loadDropInFolders() {
         }
     }
 
-    return fs.readdirSync(dropInsFolder);
+    /* Load all folders, filter for those that contain package.json file, register remaining as drop-ins */
+    readdirSync(dropInsFolder)
+        .map(f => resolve(dropInsFolder, f))
+        .filter(f => lstatSync(f).isDirectory())
+        .filter(f => readdirSync(f).includes('package.json'))
+        .forEach(f => registerDropIn(f));
 }
 
-function registerDropInFolders(folders) {
-    folders.forEach(registerDropIn.bind(this));
-}
+function onWatcherEvent(eventName, type, fullName) {
+    let pathParts = fullName.substring(dropInsFolder.length + 1).split(sep);
 
-const _mainWatcher = new folderWatcher({
-    folderPath: dropInsFolder,
-    debounceTime: 1000,
-});
-
-function onMainWatcherEvent(eventType) {
-    let data = Array.prototype.splice.call(arguments, 1);
-    
-    switch (eventType) {
-        case 'created':
-            registerDropIn(data[0]);
-            break;
-        case 'changed':
-            unregisterDropIn(data[0]);
-            registerDropIn(data[1]);
-            break;
-        case 'deleted':
-            unregisterDropIn(data[0]);
-            break;
+    if (type === 'file' && pathParts.length === 2 && pathParts[1].toLowerCase() === 'package.json' && ['added', 'removed'].includes(eventName)) {
+        // package.json inside drop-in folder has been added or removed
+        if (eventName === 'added') {
+            registerDropIn(fullName.substring(0, fullName.length - pathParts[1].length - 1));
+        } else {
+            unregisterDropIn(pathParts[0]);
+        }
+    } else if (type === 'file' && pathParts.length >= 2) {
+        // Change to some file in drop-in folder -> notify drop in to restart
+        restartDropIn(pathParts[0]);
     }
 }
 
-let dropInFolders = loadDropInFolders();
-_mainWatcher.on('*', onMainWatcherEvent.bind(this));
-_mainWatcher.start();
 
-logger.logInformation('##################################################');
-logger.logInformation(`# node-runner v${version}`);
-logger.logInformation('##################################################');
-logger.logInformation('#');
-logger.logInformation(`# Drop-ins path:   ${dropInsFolder}`);
-logger.logInformation(`# Loaded drop-ins: ${dropInFolders.join(', ')}`);
-logger.logInformation(`# node version:    ${nodeVersion}`);
-logger.logInformation('#');
+logger.information('##################################################');
+logger.information(`# node-runner v${version}`);
+logger.information('##################################################');
+logger.information('#');
+logger.information(`# Drop-ins path:   ${dropInsFolder}`);
+logger.information(`# node version:    ${nodeVersion}`);
+logger.information('#');
 
-registerDropInFolders(dropInFolders);
+/* Load drop-ins that are already in place */
+loadDropIns(dropInsFolder);
+
+/* Register changes to the folders */
+watcher.on('*', onWatcherEvent.bind(this));
+
+/* Register watcher error events */
+watcher.on('error', error => logger.error('  > ' + error));

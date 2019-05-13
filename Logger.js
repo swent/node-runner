@@ -1,5 +1,4 @@
 const pkg = require('./package.json');
-const process = require('process');
 const fs = require('fs');
 const path = require('path');
 const cwd = process.cwd();
@@ -34,35 +33,35 @@ class Logger {
         return `${stringified.length === 1 ? '0' : ''}${stringified}`;
     }
 
-    logTrace(message) {
+    trace(message) {
         let logMsg = `[${Logger.timestamp}] [T] ${message}`;
         this._logQueue.push(logMsg);
         console.log(logMsg);
         return this;
     }
 
-    logDebug(message) {
+    debug(message) {
         let logMsg = `[${Logger.timestamp}] [D] ${message}`;
         this._logQueue.push(logMsg);
         console.log(logMsg);
         return this;
     }
 
-    logInformation(message) {
+    information(message) {
         let logMsg = `[${Logger.timestamp}] [I] ${message}`;
         this._logQueue.push(logMsg);
         console.log(logMsg);
         return this;
     }
 
-    logWarning(message) {
+    warning(message) {
         let logMsg = `[${Logger.timestamp}] [W] ${message}`;
         this._logQueue.push(logMsg);
         console.log(logMsg);
         return this;
     }
 
-    logError(message) {
+    error(message) {
         let logMsg = `[${Logger.timestamp}] [E] ${message}`;
         this._logQueue.push(logMsg);
         console.log(logMsg);
