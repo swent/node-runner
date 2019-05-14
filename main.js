@@ -11,13 +11,14 @@ const nodeVersion = process.version;
 const dropInsFolder = resolve(process.cwd(), pkg.dropInsFolder);
 const watcher = new PollFolderwatch(dropInsFolder, { autoStart: true });
 const dropIns = [];
+let lastDropIns;
 
 function registerDropIn(fullPath) {
     let pathParts = fullPath.split(sep),
         dropInName = pathParts[pathParts.length - 1];
 
     logger.information(`  > Registering new drop-in "${dropInName}" ...`);
-    dropIns.push(new DropIn(dropInName, fullPath));
+    dropIns.push(lastDropIns = new DropIn(dropInName, fullPath));
     logger.information(`    List: ${dropIns.map(di => di.name).join(', ')}`);
 }
 

@@ -1,5 +1,5 @@
 const child_process = require('child_process');
-const path = require('path');
+const { resolve } = require('path');
 const fs = require('fs');
 const logger = require('./Logger');
 
@@ -14,6 +14,12 @@ class DropIn {
         this._restartTimer = 0;
         this._forceStop = false;
         this._destroyed = false;
+        let scripts = JSON.parse(fs.readFileSync(resolve(fullPath, 'package.json'), { encoding: 'utf8' })).scripts;
+        if (scripts && scripts.start) {
+            this._startScript = scripts.start;
+        } else {
+            throw new Error('Drop-In has no start script !');
+        }
 
         this.start();
 
@@ -66,7 +72,7 @@ class DropIn {
                 this._restartTimer = 0;
             } else {
                 if (this._process && this._processRunning) {
-                    this._process.kill('SIGKILL');
+                    this._process.kill('SIGINT');
                 }
             }
 
@@ -130,7 +136,7 @@ class DropIn {
     }
 
     _checkFiles() {
-        return fs.existsSync(path.resolve(this._fullPath, 'package.json'));
+        return fs.existsSync(resolve(this._fullPath, 'package.json'));
     }
 
     _restoreNpmPackages() {
@@ -153,15 +159,17 @@ class DropIn {
 
         try {
             logger.debug(`    Starting node process of "${this.name}" ...`);
-            this._process = child_process.spawn('cmd', ['/c', 'npm', 'run', 'start'], {
+            let startScriptParts = this._startScript.split(' '),
+                executable = startScriptParts.splice(0, 1)[0];
+            this._process = child_process.spawn(executable, startScriptParts, {
                 cwd: this._fullPath,
                 encoding: 'utf8'
             });
             this._process.on('error', logger.error.bind(logger));
             this._processRunning = true;
             this._process.on('close', this.onProcessClose.bind(this));
-            //this._process.stdout.on('data', this.onProcessData.bind(this));
-            //this._process.stderr.on('data', this.onProcessError.bind(this));
+            this._process.stdout.on('data', this.onProcessData.bind(this));
+            this._process.stderr.on('data', this.onProcessError.bind(this));
               
         } catch (error) {
             result = false;
