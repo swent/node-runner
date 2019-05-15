@@ -1,9 +1,10 @@
-const pkg = require('./package.json');
+const settings = require('./Settings');
 const fs = require('fs');
 const path = require('path');
+
 const cwd = process.cwd();
-const logPath = path.resolve(cwd, pkg.logFile);
-const minLogLevel = pkg.minLogLevel;
+const logPath = path.resolve(cwd, settings.logFile);
+const minLogLevel = settings.minLogLevel;
 
 class Logger {
     constructor(filePath) {

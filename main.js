@@ -1,14 +1,15 @@
-const pkg = require('./package.json');
-const { existsSync, readdirSync, mkdirSync, lstatSync, statSync } = require('fs');
+const { existsSync, readdirSync, mkdirSync, lstatSync } = require('fs');
 const { resolve, sep } = require('path');
 const { PollFolderwatch } = require('./PollFolderwatch');
 const { DropIn } = require('./DropIn');
 const logger = require('./Logger');
 
+const pkg = require('./package.json');
+const settings = require('./Settings');
 const version = pkg.version;
 const nodeVersion = process.version;
 
-const dropInsFolder = resolve(process.cwd(), pkg.dropInsFolder);
+const dropInsFolder = resolve(process.cwd(), settings.dropInsFolder);
 const watcher = new PollFolderwatch(dropInsFolder, { autoStart: true });
 const dropIns = [];
 let lastDropIns;
