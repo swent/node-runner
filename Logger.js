@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const cwd = process.cwd();
 const logPath = path.resolve(cwd, pkg.logFile);
+const minLogLevel = pkg.minLogLevel;
 
 class Logger {
     constructor(filePath) {
@@ -34,38 +35,48 @@ class Logger {
     }
 
     trace(message) {
-        let logMsg = `[${Logger.timestamp}] [T] ${message}`;
-        this._logQueue.push(logMsg);
-        console.log(logMsg);
-        return this;
+        if (minLogLevel < 1) {
+            let logMsg = `[${Logger.timestamp}] [T] ${message}`;
+            this._logQueue.push(logMsg);
+            console.log(logMsg);
+            return this;
+        }
     }
 
     debug(message) {
-        let logMsg = `[${Logger.timestamp}] [D] ${message}`;
-        this._logQueue.push(logMsg);
-        console.log(logMsg);
-        return this;
+        if (minLogLevel < 2) {
+            let logMsg = `[${Logger.timestamp}] [D] ${message}`;
+            this._logQueue.push(logMsg);
+            console.log(logMsg);
+            return this;
+        }
     }
 
     information(message) {
-        let logMsg = `[${Logger.timestamp}] [I] ${message}`;
-        this._logQueue.push(logMsg);
-        console.log(logMsg);
-        return this;
+        if (minLogLevel < 3) {
+            let logMsg = `[${Logger.timestamp}] [I] ${message}`;
+            this._logQueue.push(logMsg);
+            console.log(logMsg);
+            return this;
+        }
     }
 
     warning(message) {
-        let logMsg = `[${Logger.timestamp}] [W] ${message}`;
-        this._logQueue.push(logMsg);
-        console.log(logMsg);
-        return this;
+        if (minLogLevel < 4) {
+            let logMsg = `[${Logger.timestamp}] [W] ${message}`;
+            this._logQueue.push(logMsg);
+            console.log(logMsg);
+            return this;
+        }
     }
 
     error(message) {
-        let logMsg = `[${Logger.timestamp}] [E] ${message}`;
-        this._logQueue.push(logMsg);
-        console.log(logMsg);
-        return this;
+        if (minLogLevel < 5) {
+            let logMsg = `[${Logger.timestamp}] [E] ${message}`;
+            this._logQueue.push(logMsg);
+            console.log(logMsg);
+            return this;
+        }
     }
 }
 

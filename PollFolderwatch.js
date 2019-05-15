@@ -6,11 +6,11 @@ class PollFolderwatch {
     constructor(watchPath, options = null) {
         this._watchPath = resolve(process.cwd(), watchPath);
         this._watchTimer = null;
-        this._watchInterval = 600;
+        this._watchInterval = 1600;
         this._lastInfoObject = null;
         this._eventListeners = {};
         this._debounceCache = {};
-        this._debounceDelay = 1900;
+        this._debounceDelay = 5000;
 
         if (options) {
             if (options.watchInterval) {

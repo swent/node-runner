@@ -19,14 +19,19 @@ function registerDropIn(fullPath) {
 
     logger.information(`  > Registering new drop-in "${dropInName}" ...`);
     dropIns.push(lastDropIns = new DropIn(dropInName, fullPath));
-    logger.information(`    List: ${dropIns.map(di => di.name).join(', ')}`);
 }
 
 function unregisterDropIn(dropInName) {
     logger.information(`  > Unregistering drop-in "${dropInName}" ...`);
     let dropIn = dropIns.splice(dropIns.findIndex(di => di.name === dropInName), 1)[0];
-    dropIn.destroy();
-    logger.information(`    List: ${dropIns.map(di => di.name).join(', ')}`);
+    if (dropIn) {
+        dropIn.destroy();
+    } else {
+        logger.error(`    Drop-in could not be found in loaded drop-ins ! A list of loaded drop-ins following:`);
+        dropIns
+            .map(di => `    - ${di.name}: ${di.fullPath}`)
+            .forEach(di => logger.error(di));
+    }
 }
 
 function restartDropIn(dropInName) {
@@ -41,6 +46,7 @@ function restartDropIn(dropInName) {
 function loadDropIns(dropInsFolder) {
     if (!existsSync(dropInsFolder)) {
         try {
+            logger.information(`  > Drop-ins folder does not exist, creating folder "${dropInsFolder}" ...`);
             mkdirSync(dropInsFolder)
         } catch (error) {
             if (error.code !== 'EEXIST') {
@@ -90,3 +96,9 @@ watcher.on('*', onWatcherEvent.bind(this));
 
 /* Register watcher error events */
 watcher.on('error', error => logger.error('  > ' + error));
+
+logger.information('  > List of loaded drop-ins:');
+dropIns
+    .map(di => `    - ${di.name}: ${di.fullPath}`)
+    .forEach(di => logger.information(di));
+logger.information('');

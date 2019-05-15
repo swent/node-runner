@@ -5,6 +5,7 @@
   "main": "main.js",
   "dropInsFolder": "../dropins",
   "logFile": "runtime.log",
+  "minLogLevel": 3,
   "scripts": {
     "start": "node main.js"
   },
