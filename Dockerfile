@@ -2,7 +2,7 @@ FROM node:lts-alpine
 
 # Create directories
 WORKDIR /tmp/app
-RUN mkdir /usr/src/dropins
+RUN mkdir -p /usr/src/dropins
 
 # Copy app to temp location
 COPY package.json ./
