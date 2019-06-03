@@ -7,7 +7,8 @@ function loadOrCreateSettings() {
         writeFileSync(settingsPath, JSON.stringify({
             "dropInsFolder": "../dropins",
             "logFile": "runtime.log",
-            "minLogLevel": 2
+            "minLogLevel": 2,
+            "port": 8080
         }), { encoding: 'utf8' });
     }
 

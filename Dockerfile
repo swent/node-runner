@@ -1,8 +1,5 @@
 FROM node:lts-alpine
 
-# Install ssh client
-RUN apk update && apk-install openssh-client
-
 # Create directories
 WORKDIR /tmp/app
 RUN mkdir /usr/src/dropins

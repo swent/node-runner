@@ -1,13 +1,17 @@
+const request = require('request');
+const express = require('express');
 const { existsSync, readdirSync, mkdirSync, lstatSync } = require('fs');
 const { resolve, sep } = require('path');
 const { DropIn } = require('./DropIn');
 const pollFolderwatch = require('poll-folderwatch');
 const logger = require('./Logger');
 
+const app = express();
 const pkg = require('./package.json');
 const settings = require('./Settings');
 const version = pkg.version;
 const nodeVersion = process.version;
+const port = settings.port || 8080;
 
 const dropInsFolder = resolve(process.cwd(), settings.dropInsFolder);
 const watcher = new pollFolderwatch(dropInsFolder, { autoStart: true });
@@ -16,10 +20,11 @@ let lastDropIns;
 
 function registerDropIn(fullPath) {
     let pathParts = fullPath.split(sep),
-        dropInName = pathParts[pathParts.length - 1];
+        dropInName = pathParts[pathParts.length - 1],
+        port = getUnusedPort();
 
     logger.information(`  > Registering new drop-in "${dropInName}" ...`);
-    dropIns.push(lastDropIns = new DropIn(dropInName, fullPath));
+    dropIns.push(lastDropIns = new DropIn(dropInName, fullPath, port));
 }
 
 function unregisterDropIn(dropInName) {
@@ -36,7 +41,7 @@ function unregisterDropIn(dropInName) {
 }
 
 function restartDropIn(dropInName) {
-    let dropIn = dropIns.splice(dropIns.findIndex(di => di.name === dropInName), 1)[0];
+    let dropIn = dropIns.find(di => di.name === dropInName);
 
     if (dropIn) {
         logger.information(`  > Restarting drop-in "${dropInName}" ...`);
@@ -80,26 +85,55 @@ function onWatcherEvent(eventName, type, fullName) {
     }
 }
 
+function getUnusedPort() {
+    let ports = dropIns.map(di => di.port);
 
-logger.information('##################################################');
-logger.information(`# node-runner v${version}`);
-logger.information('##################################################');
-logger.information('#');
-logger.information(`# Drop-ins path:   ${dropInsFolder}`);
-logger.information(`# node version:    ${nodeVersion}`);
-logger.information('#');
+    for (let i = 8100; i < 9000; i++) {
+        if (!ports.includes(i)) {
+            return i;
+        }
+    }
+    logger.error('  > ERROR: unable to find unused drop-in port, all ports already in use.');
+    return null;
+}
 
-/* Load drop-ins that are already in place */
-loadDropIns(dropInsFolder);
 
-/* Register changes to the folders */
-watcher.on('*', onWatcherEvent.bind(this));
+/* Register request proxy */
+app.get('*', (req, res) => {
+    let urlParts = req.originalUrl.split('/'),
+        dropInName = urlParts.splice(0, 2)[1],
+        dropIn = dropIns.find(di => di.name === dropInName);
 
-/* Register watcher error events */
-watcher.on('error', error => logger.error('  > ' + error));
+    if (dropIn) {
+        request(`http://localhost:${dropIn.port}/${urlParts.join('/')}`).pipe(res);
+    } else {
+        res.status(404).end();
+    }
+});
 
-logger.information('  > List of loaded drop-ins:');
-dropIns
-    .map(di => `    - ${di.name}: ${di.fullPath}`)
-    .forEach(di => logger.information(di));
-logger.information('');
+/* Start listening, then initialize drop-ins */
+app.listen(port, () => {
+    logger.information('##################################################');
+    logger.information(`# node-runner v${version}`);
+    logger.information('##################################################');
+    logger.information('#');
+    logger.information(`# Drop-ins path:   ${dropInsFolder}`);
+    logger.information(`# Node version:    ${nodeVersion}`);
+    logger.information(`# Http port:       ${port}`);
+    logger.information('#');
+
+    /* Load drop-ins that are already in place */
+    loadDropIns(dropInsFolder);
+
+    /* Register changes to the folders */
+    watcher.on('*', onWatcherEvent.bind(this));
+
+    /* Register watcher error events */
+    watcher.on('error', error => logger.error('  > ' + error));
+
+    logger.information('  > List of loaded drop-ins:');
+    dropIns
+        .map(di => `    - ${di.name}: ${di.fullPath}`)
+        .forEach(di => logger.information(di));
+    logger.information('');
+});
