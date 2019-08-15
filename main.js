@@ -106,7 +106,7 @@ app.all('*', (req, res) => {
 
     if (dropIn) {
         if (['PUT', 'POST', 'DELETE'].includes(req.method)) {
-            req.pipe(request[req.method.toLowerCase()](`http://localhost:${dropIn.port}/${urlParts.join('/')}`)).pipe(res);
+            req.pipe(request[req.method.toLowerCase()](`http://localhost:${dropIn.port}/${urlParts.join('/')}`));
         } else {
             request(`http://localhost:${dropIn.port}/${urlParts.join('/')}`).pipe(res);
         }
