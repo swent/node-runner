@@ -105,7 +105,11 @@ app.all('*', (req, res) => {
         dropIn = dropIns.find(di => di.name === dropInName);
 
     if (dropIn) {
-        request(`http://localhost:${dropIn.port}/${urlParts.join('/')}`).pipe(res);
+        if (['PUT', 'POST', 'DELETE'].includes(req.method)) {
+            req.pipe(request[req.method.toLowerCase()](`http://localhost:${dropIn.port}/${urlParts.join('/')}`)).pipe(res);
+        } else {
+            request(`http://localhost:${dropIn.port}/${urlParts.join('/')}`).pipe(res);
+        }
     } else {
         res.status(404).end();
     }
