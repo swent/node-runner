@@ -99,7 +99,7 @@ function getUnusedPort() {
 
 
 /* Register request proxy */
-app.get('*', (req, res) => {
+app.all('*', (req, res) => {
     let urlParts = req.originalUrl.split('/'),
         dropInName = urlParts.splice(0, 2)[1],
         dropIn = dropIns.find(di => di.name === dropInName);
