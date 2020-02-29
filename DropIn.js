@@ -4,9 +4,10 @@ const fs = require('fs');
 const logger = require('./Logger');
 
 class DropIn {
-    constructor(name, fullPath) {
+    constructor(name, fullPath, port) {
         this._name = name;
         this._fullPath = fullPath;
+        this._port = port;
         this._state = 'idle';
         this._process = null;
         this._processRunning = false;
@@ -32,6 +33,10 @@ class DropIn {
 
     get fullPath() {
         return this._fullPath;
+    }
+
+    get port() {
+        return this._port;
     }
 
     get state() {
@@ -160,10 +165,13 @@ class DropIn {
         try {
             logger.debug(`    Starting node process of "${this.name}" ...`);
             let startScriptParts = this._startScript.split(' '),
-                executable = startScriptParts.splice(0, 1)[0];
+                executable = startScriptParts.splice(0, 1)[0],
+                environment = Object.create( process.env );
+            environment.PORT = this.port;
             this._process = child_process.spawn(executable, startScriptParts, {
                 cwd: this._fullPath,
-                encoding: 'utf8'
+                encoding: 'utf8',
+                env: environment,
             });
             this._process.on('error', logger.error.bind(logger));
             this._processRunning = true;
@@ -190,11 +198,11 @@ class DropIn {
     }
 
     onProcessData(data) {
-        //logger.debug(`  > Drop-In "${this.name}" stdout: ${data}`);
+        logger.debug(`  > Drop-In "${this.name}" stdout: ${data}`);
     }
 
     onProcessError(data) {
-        //logger.information(`  > Drop-In "${this.name}" stderr: ${data}`);
+        logger.information(`  > Drop-In "${this.name}" stderr: ${data}`);
     }
 }
 
