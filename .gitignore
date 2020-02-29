@@ -1,2 +1,4 @@
-.idea/vcs.xml
-.node_modules
+.idea
+node_modules
+*.log
+settings.json

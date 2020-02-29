@@ -10,7 +10,10 @@ const version = pkg.version;
 const nodeVersion = process.version;
 
 const dropInsFolder = resolve(process.cwd(), settings.dropInsFolder);
-const watcher = new pollFolderwatch(dropInsFolder, { autoStart: true });
+const watcher = new pollFolderwatch(dropInsFolder, {
+    autoStart: true,
+    watchInterval: settings.dropInsScanInterval || 3000,
+    debounceDelay: settings.dropInsRestartDelay || 7000 });
 const dropIns = [];
 let lastDropIns;
 
