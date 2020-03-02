@@ -146,7 +146,7 @@ class DropIn {
 
     _restoreNpmPackages() {
         logger.debug(`    Restoring npm packages of "${this.name}" ...`);
-        let output = child_process.execSync('npm install', {
+        let output = child_process.execSync('npm install --production', {
             cwd: this._fullPath,
             encoding: 'utf8'
         });
