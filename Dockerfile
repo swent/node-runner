@@ -1,7 +1,7 @@
 FROM node:lts-alpine
 
 # Install python
-RUN sudo apt-get install -y python
+RUN apk add --no-cache python3
 
 # Create directories
 WORKDIR /tmp/app
