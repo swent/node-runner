@@ -1,5 +1,8 @@
 FROM node:lts-alpine
 
+# Install python
+RUN sudo apt-get install -y python
+
 # Create directories
 WORKDIR /tmp/app
 RUN mkdir -p /usr/src/dropins
@@ -19,3 +22,4 @@ EXPOSE 8080
 
 # Run app
 CMD cp -a /tmp/app/. ./ && npm start
+
