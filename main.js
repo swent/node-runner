@@ -3,8 +3,8 @@ const express = require('express');
 const { existsSync, readdirSync, mkdirSync, lstatSync } = require('fs');
 const { resolve, sep } = require('path');
 const { DropIn } = require('./DropIn');
-const pollFolderwatch = require('poll-folderwatch');
 const logger = require('./Logger');
+const { Watcher } = require('./Watcher');
 
 const app = express();
 const pkg = require('./package.json');
@@ -14,10 +14,9 @@ const nodeVersion = process.version;
 const port = settings.port || 8080;
 
 const dropInsFolder = resolve(process.cwd(), settings.dropInsFolder);
-const watcher = new pollFolderwatch(dropInsFolder, {
-    autoStart: true,
-    watchInterval: settings.dropInsScanInterval || 3000,
-    debounceDelay: settings.dropInsRestartDelay || 7000 });
+const watcher = new Watcher(dropInsFolder, {
+    autoStart: true
+});
 const dropIns = [];
 let lastDropIns;
 
@@ -72,19 +71,11 @@ function loadDropIns(dropInsFolder) {
         .forEach(f => registerDropIn(f));
 }
 
-function onWatcherEvent(eventName, type, fullName) {
-    let pathParts = fullName.substring(dropInsFolder.length + 1).split(sep);
-
-    if (type === 'file' && pathParts.length === 2 && pathParts[1].toLowerCase() === 'package.json' && ['added', 'removed'].includes(eventName)) {
-        // package.json inside drop-in folder has been added or removed
-        if (eventName === 'added') {
-            registerDropIn(fullName.substring(0, fullName.length - pathParts[1].length - 1));
-        } else {
-            unregisterDropIn(pathParts[0]);
-        }
-    } else if (type === 'file' && pathParts.length >= 2) {
-        // Change to some file in drop-in folder -> notify drop in to restart
-        restartDropIn(pathParts[0]);
+function onWatcherEvent(event, dirName) {
+    if (event === 'added') {
+        registerDropIn(resolve(dropInsFolder, dirName));
+    } else {
+        unregisterDropIn(dirName);
     }
 }
 
@@ -134,10 +125,7 @@ app.listen(port, () => {
     loadDropIns(dropInsFolder);
 
     /* Register changes to the folders */
-    watcher.on('*', onWatcherEvent.bind(this));
-
-    /* Register watcher error events */
-    watcher.on('error', error => logger.error('  > ' + error));
+    watcher.on('added', onWatcherEvent.bind(this));
 
     logger.information('  > List of loaded drop-ins:');
     dropIns
