@@ -2,6 +2,7 @@ FROM node:lts-alpine
 
 # Install python
 RUN apk add --no-cache python3
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Create directories
 WORKDIR /tmp/app
@@ -22,4 +23,3 @@ EXPOSE 8080
 
 # Run app
 CMD cp -a /tmp/app/. ./ && npm start
-
