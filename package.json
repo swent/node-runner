@@ -14,7 +14,7 @@
   "author": "swent",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.3",
+    "express": "^4.19.2",
     "request": "^2.88.0"
   }
 }
